@@ -1,4 +1,4 @@
-import { create, createStore } from "zustand";
+import { create, createStore, useStore } from "zustand";
 
 type Form = {
   name: string;
@@ -15,14 +15,25 @@ type Store<T extends Record<string, unknown>> = {
 export function createFormStore<T extends Record<string, unknown>>() {
   return createStore<Store<T>>((set) => ({
     form: {},
-    updateForm: (form) => set({ form }),
+    updateForm: (update) => {
+      set((state) => ({
+        form: { ...state.form, ...update },
+        pendingUpdates: { ...state.pendingUpdates, ...update },
+      }));
+    },
     pendingUpdates: {},
     clearPendingUpdates: () => set({ pendingUpdates: {} }),
     setPendingUpdates: (updates) => set({ pendingUpdates: updates }),
   }));
 }
+const formStore = createFormStore<Form>();
 
-export const useFormStore = create<Store<Form>>((set) => ({
+export const useFormStore = (selector: (state: Store<Form>) => any) =>
+  useStore(formStore, selector);
+
+useFormStore.getState = () => formStore.getState();
+
+export const useNormalFormState = create<Store<Form>>((set) => ({
   form: {},
   pendingUpdates: {},
   updateForm: (update) => {

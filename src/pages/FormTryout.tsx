@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { FieldInput } from "../components/form/FieldInput";
 import { useFormStore } from "../store/store";
 
@@ -16,12 +16,11 @@ export default function FormTryout() {
 }
 
 function Spy() {
-  const form = useFormStore((state) => state.form);
-  return <pre>{JSON.stringify({ form }, null, 2)}</pre>;
+  const state = useFormStore((state) => state);
+  return <pre>{JSON.stringify(state, null, 2)}</pre>;
 }
 
-function Updater() {
-  const [state, setState] = useState("idle");
+function useUpdater() {
   const pendingUpdates = useFormStore((state) => state.pendingUpdates);
   const clearPendingUpdates = useFormStore(
     (state) => state.clearPendingUpdates
@@ -32,18 +31,16 @@ function Updater() {
 
   useEffect(() => {
     if (Object.keys(pendingUpdates).length === 0) {
-      setState("🫧 No new Updates");
       return;
     }
 
     // Only start a new update cycle if we're not already processing updates
     if (Object.keys(processingUpdatesRef.current).length === 0) {
-      setState("📨 Queueing next Updates");
       // Capture the current updates to process
 
       timeRef.current = setTimeout(async () => {
         processingUpdatesRef.current = { ...pendingUpdates };
-        setState("📤 Sending Updates to the Backend");
+
         await pretendToSendToBackend();
 
         // Only clear the updates that were part of this batch
@@ -58,7 +55,6 @@ function Updater() {
         }
 
         processingUpdatesRef.current = {};
-        setState("📥 Received Updates from the Backend");
       }, 5000);
     }
 
@@ -66,13 +62,17 @@ function Updater() {
       if (timeRef.current) clearTimeout(timeRef.current);
     };
   }, [clearPendingUpdates, pendingUpdates]);
+}
+
+function Updater() {
+  useUpdater();
 
   return (
     <>
       <h3 className="text-2xl font-bold text-gray-900 mb-2">Pending Updates</h3>
-      <p className="text-gray-600 mb-2">{state}</p>
+      {/* <p className="text-gray-600 mb-2">{state}</p>
       <pre>{JSON.stringify(pendingUpdates, null, 2)}</pre>
-      <pre>{JSON.stringify(processingUpdatesRef.current, null, 2)}</pre>
+      <pre>{JSON.stringify(processingUpdatesRef.current, null, 2)}</pre> */}
     </>
   );
 }
@@ -84,7 +84,7 @@ function diffProcessedUpdatesToPendingUpdates(
   const updatesToKeep = Object.keys(currentPendingUpdates).reduce(
     (acc, key) => {
       if (
-        !sendUpdates[key] ||
+        !hasKey(sendUpdates, key) ||
         sendUpdates[key] !== currentPendingUpdates[key]
       ) {
         acc[key] = currentPendingUpdates[key];
@@ -102,4 +102,8 @@ async function pretendToSendToBackend() {
       resolve(true);
     }, 2000);
   });
+}
+
+function hasKey(object: Record<string, unknown>, keyname: string) {
+  return Object.prototype.hasOwnProperty.call(object, keyname);
 }

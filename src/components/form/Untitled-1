@@ -1,0 +1,13 @@
+
+
+POST  /antrag
+GET   /antrag/{id}
+PUT   /antrag/{id} # nicht fertig
+
+Bild -> Server -> Bild URL
+Form -> Bild URL
+
+PATCH /antrag/{id} # partial submit
+
+POST PUT GET /antrag/{id}/anschrift
+POST PUT GET /antrag/{id}/personendaten
